@@ -65,17 +65,20 @@ pipeline:
                     command: |-
                       #!/bin/sh
 
-                      # Clone the private manifest repo using the Harness GitHub Connector
+                      # Clone the private manifest repo using Harness GitHub Token secret
                       git clone https://<+secrets.getValue("account.Github-token")>@github.com/Fardeen313/Mario-game-manifest.git
-                      cd Mario-game-manifest
 
-                      # Update the image tag with timestamp
+                      # Go into the cloned repo
+                      cd Mario-game-manifest || exit 1
+
+                      # Update the image tag with the Harness timestamp variable
                       sed -i "s|fardeenattar/mario-image:.*|fardeenattar/mario-image:<+timestamp>|" mario.yml
 
-                      # Git config and push
+                      # Configure Git user identity
                       git config --global user.email "bot@harness.io"
                       git config --global user.name "harness-bot"
 
+                      # Commit and push changes
                       git add .
-                      git commit -m "CI: update image tag to <+timestamp>"
+                      git commit -m "CI: update image tag to <+timestamp>" || echo "Nothing to commit"
                       git push origin main
