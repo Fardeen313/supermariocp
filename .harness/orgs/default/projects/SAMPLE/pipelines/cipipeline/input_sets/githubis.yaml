@@ -1,0 +1,14 @@
+inputSet:
+  name: github-is
+  identifier: githubis
+  orgIdentifier: default
+  projectIdentifier: SAMPLE
+  pipeline:
+    identifier: cipipeline
+    properties:
+      ci:
+        codebase:
+          build:
+            type: branch
+            spec:
+              branch: <+trigger.branch>
