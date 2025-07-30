@@ -52,7 +52,7 @@ pipeline:
                     connectorRef: account.Docker
                     repo: fardeenattar/mario-image
                     tags:
-                      - <+timestamp>
+                      - <+timestamp>\n
                     caching: false
               - step:
                   type: Run
@@ -72,7 +72,7 @@ pipeline:
                       cd Mario-game-manifest || exit 1
 
                       # Update the image tag with the Harness timestamp variable
-                      sed -i "s|fardeenattar/mario-image:.*|fardeenattar/mario-image:<+timestamp>|" mario.yml
+                      sed -i "s|fardeenattar/mario-image:.*|fardeenattar/mario-image:${IMAGE_TAG}|" mario.yml
 
                       # Configure Git user identity
                       git config --global user.email "bot@harness.io"
@@ -80,5 +80,5 @@ pipeline:
 
                       # Commit and push changes
                       git add .
-                      git commit -m "CI: update image tag to <+timestamp>" || echo "Nothing to commit"
+                      git commit -m "CI: update image tag to ${IMAGE_TAG}" || echo "Nothing to commit"
                       git push origin main
