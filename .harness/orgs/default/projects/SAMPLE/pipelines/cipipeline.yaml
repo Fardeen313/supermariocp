@@ -1,0 +1,81 @@
+pipeline:
+  name: ci-pipeline
+  identifier: cipipeline
+  projectIdentifier: SAMPLE
+  orgIdentifier: default
+  tags: {}
+  properties:
+    ci:
+      codebase:
+        connectorRef: account.Gitconnectoradmin
+        repoName: supermariocp
+        build: <+input>
+  stages:
+    - stage:
+        name: build
+        identifier: build
+        description: ""
+        type: CI
+        spec:
+          cloneCodebase: true
+          caching:
+            enabled: true
+            override: true
+          buildIntelligence:
+            enabled: true
+          infrastructure:
+            type: KubernetesDirect
+            spec:
+              connectorRef: minikube
+              namespace: nonprod
+              automountServiceAccountToken: true
+              nodeSelector: {}
+              os: Linux
+          execution:
+            steps:
+              - step:
+                  type: GitClone
+                  name: GitClone_1
+                  identifier: GitClone_1
+                  spec:
+                    connectorRef: account.Gitconnectoradmin
+                    repoName: supermariocp
+                    build:
+                      type: branch
+                      spec:
+                        branch: main
+              - step:
+                  type: BuildAndPushDockerRegistry
+                  name: BuildAndPushDockerRegistry_1
+                  identifier: BuildAndPushDockerRegistry_1
+                  spec:
+                    connectorRef: account.Docker
+                    repo: fardeenattar/mario-image
+                    tags:
+                      - <+timestamp>
+                    caching: false
+              - step:
+                  type: Run
+                  name: UpdateGitOpsManifest
+                  identifier: UpdateGitOpsManifest
+                  spec:
+                    connectorRef: account.Docker
+                    image: alpine/git
+                    shell: Sh
+                    command: |-
+                      #!/bin/sh
+
+                      # Clone the private manifest repo using the Harness GitHub Connector
+                      git clone https://<+secrets.getValue("Github-token")>@github.com/Fardeen313/Mario-game-manifest.git
+                      cd Mario-game-manifest
+
+                      # Update the image tag with timestamp
+                      sed -i "s|fardeenattar/mario-image:.*|fardeenattar/mario-image:<+timestamp>|" mario.yml
+
+                      # Git config and push
+                      git config --global user.email "bot@harness.io"
+                      git config --global user.name "harness-bot"
+
+                      git add .
+                      git commit -m "CI: update image tag to <+timestamp>"
+                      git push origin main
