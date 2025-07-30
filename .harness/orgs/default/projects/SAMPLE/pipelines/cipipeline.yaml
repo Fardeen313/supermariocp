@@ -45,17 +45,13 @@ pipeline:
                         branch: main
               - step:
                   type: Run
-                  name: Set Image Tag
-                  identifier: Set_Image_Tag
+                  name: Generate Timestamp
+                  identifier: GenerateTimestamp
                   spec:
                     connectorRef: account.Docker
-                    image: alpine:latest
-                    shell: Sh
-                    command: |
-                      export IMAGE_TAG=$(date +%Y%m%d%H%M%S)
-                      echo "IMAGE_TAG=$IMAGE_TAG" >> harness/env.properties
-                  outputVariables:
-                    - name: IMAGE_TAG
+                    image: fardeenattar/mario-image
+                    shell: Bash
+                    command: echo "timestamp=$(date +%Y%m%d-%H%M%S)" >> harness.env
               - step:
                   type: BuildAndPushDockerRegistry
                   name: BuildAndPushDockerRegistry_1
@@ -64,7 +60,7 @@ pipeline:
                     connectorRef: account.Docker
                     repo: fardeenattar/mario-image
                     tags:
-                      - <+pipeline.stages.build.spec.execution.steps.Set_Image_Tag.output.IMAGE_TAG>
+                      - <+env.timestamp>
                     caching: false
               - step:
                   type: Run
@@ -74,17 +70,13 @@ pipeline:
                     connectorRef: account.Docker
                     image: alpine/git
                     shell: Sh
-                    command: |-
+                    command: |
                       #!/bin/sh
-
                       git clone https://<+secrets.getValue("account.aws-cf-token")>@github.com/Fardeen313/Mario-game-manifest.git
                       cd Mario-game-manifest || exit 1
-
-                      sed -i "s|fardeenattar/mario-image:.*|fardeenattar/mario-image:<+pipeline.stages.build.spec.execution.steps.Set_Image_Tag.output.IMAGE_TAG>|" mario.yml
-
+                      sed -i "s|fardeenattar/mario-image:.*|fardeenattar/mario-image:<+env.timestamp>|" mario.yml
                       git config --global user.email "bot@harness.io"
                       git config --global user.name "harness-bot"
-
                       git add .
-                      git commit -m "CI: update image tag to <+pipeline.stages.build.spec.execution.steps.Set_Image_Tag.output.IMAGE_TAG>" || echo "Nothing to commit"
+                      git commit -m "CI: update image tag to <+env.timestamp>" || echo "Nothing to commit"
                       git push origin main
