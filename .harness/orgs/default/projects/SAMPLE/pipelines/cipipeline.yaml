@@ -44,6 +44,19 @@ pipeline:
                       spec:
                         branch: main
               - step:
+                  type: Run
+                  name: Set Image Tag
+                  identifier: Set_Image_Tag
+                  spec:
+                    connectorRef: account.Docker
+                    image: alpine:latest
+                    shell: Sh
+                    command: |
+                      export IMAGE_TAG=$(date +%Y%m%d%H%M%S)
+                      echo "IMAGE_TAG=$IMAGE_TAG" >> harness/env.properties
+                  outputVariables:
+                    - name: IMAGE_TAG
+              - step:
                   type: BuildAndPushDockerRegistry
                   name: BuildAndPushDockerRegistry_1
                   identifier: BuildAndPushDockerRegistry_1
@@ -51,12 +64,8 @@ pipeline:
                     connectorRef: account.Docker
                     repo: fardeenattar/mario-image
                     tags:
-                      - <+timestamp>
+                      - <+pipeline.stages.build.spec.execution.steps.Set_Image_Tag.output.IMAGE_TAG>
                     caching: false
-                  outputVariables:
-                    - name: imageTag
-                      type: String
-                      value: <+timestamp>
               - step:
                   type: Run
                   name: UpdateGitOpsManifest
@@ -68,18 +77,14 @@ pipeline:
                     command: |-
                       #!/bin/sh
 
-                      # Clone the private manifest repo using Harness GitHub Token secret
                       git clone https://<+secrets.getValue("account.aws-cf-token")>@github.com/Fardeen313/Mario-game-manifest.git
-
                       cd Mario-game-manifest || exit 1
 
-                      # ✅ Replaced placeholder with actual output path to tag
-                      sed -i "s|fardeenattar/mario-image:.*|fardeenattar/mario-image:<+pipeline.stages.build.spec.execution.steps.BuildAndPushDockerRegistry_1.output.imageTag>|" mario.yml
+                      sed -i "s|fardeenattar/mario-image:.*|fardeenattar/mario-image:<+pipeline.stages.build.spec.execution.steps.Set_Image_Tag.output.IMAGE_TAG>|" mario.yml
 
                       git config --global user.email "bot@harness.io"
                       git config --global user.name "harness-bot"
 
                       git add .
-                      # ✅ Same change in commit message
-                      git commit -m "CI: update image tag to <+pipeline.stages.build.spec.execution.steps.BuildAndPushDockerRegistry_1.output.imageTag>" || echo "Nothing to commit"
+                      git commit -m "CI: update image tag to <+pipeline.stages.build.spec.execution.steps.Set_Image_Tag.output.IMAGE_TAG>" || echo "Nothing to commit"
                       git push origin main
