@@ -14,7 +14,6 @@ pipeline:
     - stage:
         name: build
         identifier: build
-        description: ""
         type: CI
         spec:
           cloneCodebase: true
@@ -52,8 +51,12 @@ pipeline:
                     connectorRef: account.Docker
                     repo: fardeenattar/mario-image
                     tags:
-                      - <+timestamp>\n
+                      - <+timestamp>
                     caching: false
+                  outputVariables:
+                    - name: imageTag
+                      type: String
+                      value: <+timestamp>
               - step:
                   type: Run
                   name: UpdateGitOpsManifest
@@ -68,17 +71,15 @@ pipeline:
                       # Clone the private manifest repo using Harness GitHub Token secret
                       git clone https://<+secrets.getValue("account.aws-cf-token")>@github.com/Fardeen313/Mario-game-manifest.git
 
-                      # Go into the cloned repo
                       cd Mario-game-manifest || exit 1
 
-                      # Update the image tag with the Harness timestamp variable
-                      sed -i "s|fardeenattar/mario-image:.*|fardeenattar/mario-image:<+artifact.image.tag>|" mario.yml
+                      # ✅ Replaced placeholder with actual output path to tag
+                      sed -i "s|fardeenattar/mario-image:.*|fardeenattar/mario-image:<+pipeline.stages.build.spec.execution.steps.BuildAndPushDockerRegistry_1.output.imageTag>|" mario.yml
 
-                      # Configure Git user identity
                       git config --global user.email "bot@harness.io"
                       git config --global user.name "harness-bot"
 
-                      # Commit and push changes
                       git add .
-                      git commit -m "CI: update image tag to <+artifact.image.tag>" || echo "Nothing to commit"
+                      # ✅ Same change in commit message
+                      git commit -m "CI: update image tag to <+pipeline.stages.build.spec.execution.steps.BuildAndPushDockerRegistry_1.output.imageTag>" || echo "Nothing to commit"
                       git push origin main
