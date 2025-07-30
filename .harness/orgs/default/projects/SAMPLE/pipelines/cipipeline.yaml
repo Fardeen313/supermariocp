@@ -66,7 +66,7 @@ pipeline:
                       #!/bin/sh
 
                       # Clone the private manifest repo using Harness GitHub Token secret
-                      git clone https://github.com/Fardeen313/Mario-game-manifest.git
+                      git clone https://<+secrets.getValue("account.aws-cf-token")>@github.com/Fardeen313/Mario-game-manifest.git
 
                       # Go into the cloned repo
                       cd Mario-game-manifest || exit 1
