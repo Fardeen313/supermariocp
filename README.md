@@ -1,0 +1,1 @@
+Today, I explored the ADO infrastructure of the Carnival project, reviewed the Terraform configuration file repositories and pipelines, and gained a clear understanding of their setup. I also went through the Prod and Dev/UAT AWS accounts, reviewing the ECS services for different environments. Additionally, I created handwritten notes for my reference and better understanding.
